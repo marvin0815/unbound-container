@@ -1,0 +1,36 @@
+name: Check upstream Unbound releases
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get latest upstream tag
+        id: latest
+        run: |
+          LATEST=$(curl -s "https://api.github.com/repos/NLnetLabs/unbound/tags?per_page=1" \
+            | jq -r '.[0].name' \
+            | sed 's/^release-//')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Get current Containerfile version
+        id: current
+        run: |
+          CURRENT=$(grep '^ARG UNBOUND_VERSION=' Containerfile | cut -d= -f2)
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+      - name: Report if update available
+        if: steps.latest.outputs.version != steps.current.outputs.version
+        run: |
+          echo "::notice title=New Unbound release available::${{ steps.latest.outputs.version }} is available (current: ${{ steps.current.outputs.version }})"
+          echo "Update the ARG UNBOUND_VERSION in Containerfile to ${{ steps.latest.outputs.version }}"
+          echo "Source: https://github.com/NLnetLabs/unbound/releases/tag/release-${{ steps.latest.outputs.version }}"

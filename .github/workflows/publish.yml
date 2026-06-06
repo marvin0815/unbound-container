@@ -1,0 +1,49 @@
+name: Build and publish container image
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildah
+        id: build
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfile: Containerfile
+          image: unbound
+          tags: |
+            latest
+            ${{ github.ref_name }}
+          build-args: |
+            UNBOUND_VERSION=${{ steps.version.outputs.version }}
+          oci: true
+
+      - name: Push to GHCR
+        id: push
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: unbound
+          tags: |
+            latest
+            ${{ github.ref_name }}
+          registry: ghcr.io/${{ github.actor }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
