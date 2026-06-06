@@ -24,4 +24,4 @@ COPY remote.conf /etc/unbound/unbound.conf.d/
 RUN addgroup -g 101 unbound
 RUN adduser -D -H -h /etc/unbound -g "Unbound User" -s /sbin/nologin -G unbound -u 100 unbound
 
-ENTRYPOINT ["unbound"]
+ENTRYPOINT ["unbound", "-d"]
