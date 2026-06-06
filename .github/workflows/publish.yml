@@ -26,7 +26,7 @@ jobs:
         id: build
         uses: redhat-actions/buildah-build@v2
         with:
-          containerfile: Containerfile
+          containerfiles: Containerfile
           image: unbound
           tags: |
             latest
